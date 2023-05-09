@@ -67,25 +67,33 @@ with tab1:
     data_point_counts = {}
 
     # Function to calculate spiral coordinates
-    def spiral_coords(count):
+    def circle_coords(count, max_images_per_circle=6, image_size=224, zoom_level=0.1):
         import math
-        # Size of the spiral step
-        size = 0.1
-        # Calculate angle and radius based on count
-        angle = 0.1 * count
-        radius = size * angle
+        # Image size after zooming
+        scaled_image_size = image_size * zoom_level
+        # Circle size (distance between images in the circle)
+        # Adjust circle_size based on scaled_image_size to prevent overlapping
+        circle_size = (scaled_image_size * 1.1) / 72  # 72 is the default DPI for Matplotlib
+
+        # Calculate the number of circles needed based on count and max_images_per_circle
+        circle_number = count // max_images_per_circle
+        images_in_current_circle = count % max_images_per_circle
+
+        # Calculate angle and radius based on the circle number and images in the current circle
+        angle = 2 * math.pi * images_in_current_circle / max_images_per_circle
+        radius = circle_size * (circle_number + 1)
+
         # Calculate x and y offsets
         x_offset = radius * math.cos(angle)
         y_offset = radius * math.sin(angle)
         return x_offset, y_offset
+
 
     for i in range(len(data)):
         # Path to the image file
         img_path = f"images/{data['Name'].iat[i]}.png"
         # Load the image
         img = getImage(img_path)
-        # Create an OffsetImage
-        oi = OffsetImage(img, zoom=0.1)
 
         # Data point
         point = (data[column_choice1].iat[i], data[column_choice2].iat[i])
@@ -96,8 +104,12 @@ with tab1:
         else:
             data_point_counts[point] = 0
 
-        # Calculate offset based on count
-        x_offset, y_offset = spiral_coords(data_point_counts[point])
+        # Create an OffsetImage with adjusted zoom level based on count
+        zoom_level = 0.1
+        oi = OffsetImage(img, zoom=zoom_level)
+
+        # Calculate offset based on count using circle_coords
+        x_offset, y_offset = circle_coords(data_point_counts[point])
 
         # Create an AnnotationBbox with the OffsetImage, offset by count
         ab = AnnotationBbox(oi, (point[0] + x_offset, point[1] + y_offset), frameon=False)
