@@ -60,8 +60,10 @@ with tab1:
     fig, ax = plt.subplots()
 
     # Set the scale of x and y axes
-    ax.set_xlim([0, 10])
-    ax.set_ylim([0, 10])
+    # Set the scale of x and y axes
+    ax.set_xlim([-1, 11])
+    ax.set_ylim([-1, 11])
+
 
     # Dictionary to store count of occurrences of each data point
     data_point_counts = {}
