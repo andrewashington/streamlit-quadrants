@@ -138,5 +138,4 @@ if st.button('Create Survey'):
     else:
         st.write('Failed to create the survey. Please try again later.')
 
-# Write the API response to the page for debugging
-st.write(response.json())
+
