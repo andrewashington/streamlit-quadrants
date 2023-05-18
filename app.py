@@ -14,7 +14,6 @@ st.title('Quadrants')
 
 st.write("This app uses responses.csv from a Google form and translates it into Quadrants on the fly.")
 
-
 data = pd.read_csv("responses.csv")
 
 # Load the data
@@ -272,47 +271,6 @@ with tab3:
             st.warning(f"{name1} and {name2} are not very compatible. :broken_heart:")
         else:
             st.error(f"{name1} and {name2} are not compatible at all. :broken_heart:")
-        def draw_donut_chart(compatibility_score):
-            # Calculate the empty space in the donut
-            empty_space = 100 - compatibility_score
-
-            fig, ax = plt.subplots(figsize=(6, 6))
-
-            # Create a list of colors for the chart
-            colors = ['red', 'white']
-
-            # Create a figure and axis
-            fig, ax = plt.subplots(figsize=(1, 1))
-            ax.axis('equal')
-
-            # Create the donut chart
-            wedges, texts, autotexts = ax.pie([compatibility_score, empty_space], 
-                                            labels=['', ''], 
-                                            colors=colors, 
-                                            startangle=90, 
-                                            counterclock=False, 
-                                            autopct='%1.0f%%',
-                                            pctdistance=0.85,
-                                            textprops={'color': 'white', 'fontsize': 10, 'fontweight': 'bold'},
-                                            wedgeprops=dict(width=0.5, edgecolor='white'))
-
-            # Hide the autotexts
-            for autotext in autotexts:
-                autotext.set_visible(False)
-
-            # Add a circle to create the hole in the middle of the donut
-            centre_circle = plt.Circle((0,0),0.7, fc='white')
-            ax.add_artist(centre_circle)
-
-            # Set the title of the chart
-            ax.set_title(f"Compatibility: {compatibility_score}%", fontsize=20, fontweight='bold', color='black', pad=20)
-
-            # Remove the axis
-            ax.axis('off')
-            
-
-            # Display the chart in Streamlit
-            st.pyplot(fig)
 
         # Calculate the compatibility score
         for i in range(1, 11):
@@ -321,12 +279,59 @@ with tab3:
             if isinstance(response1, str) and response1.isdigit() and isinstance(response2, str) and response2.isdigit():
                 compatibility_score += abs(int(response1) - int(response2))
 
+            # Filter the rows for the two selected names
+            selected_rows = data[data['Name'].isin([name1, name2])]
 
-        # Calculate the fullness level for the donut chart
-        fullness_level = 100 - compatibility_score
+            # Set the 'Name' column as the index
+            selected_rows = selected_rows.set_index('Name')
 
-        # Display the compatibility score
-        st.subheader(f"{name1} and {name2} are {fullness_level}% compatible!")
+            # Filter out non-numeric columns
+            numeric_columns = selected_rows.select_dtypes(include=[float, int]).columns
+            selected_rows = selected_rows[numeric_columns]
 
-        # Draw the donut chart
-        draw_donut_chart(fullness_level)
+            # Transpose the dataframe
+            transposed = selected_rows.transpose()
+
+            # Filter the columns where both names have a valid response
+            valid_responses = transposed[(transposed[name1].notnull()) & 
+                                        (transposed[name2].notnull())]
+
+            # Calculate the difference between the responses for the two selected names
+            diff = abs(valid_responses[name1] - valid_responses[name2])
+
+            # Filter the rows where the difference is greater than 5
+            similar_responses = valid_responses[diff == 0]
+            diff_responses = valid_responses[diff > 5]
+
+            # Print the similar responses
+            print('Similar Responses:')
+            print(similar_responses)
+
+            # Create a new dataframe with the questions where the responses differed by greater than 5
+            questions_diff_greater_than_5 = diff_responses.reset_index()[['index']]
+            questions_diff_greater_than_5.columns = ['Questions']
+
+        # Print the dataframes
+        pd.set_option('display.width', None)
+        st.subheader(f":100: {name1} and {name2} completely agreed on these:")
+        # Format a Streamlit table from the similar_responses dataframe to show the column for Name1 with ffccd5 background color, and Name2 with ffb3c1 background color
+        st.dataframe(
+            similar_responses.style.format('{:.0f}').set_properties(
+                subset=pd.IndexSlice[:, [name1]],
+                **{'background-color': '#ffccd5'}
+            ).set_properties(
+                subset=pd.IndexSlice[:, [name2]],
+                **{'background-color': '#ffb3c1'}
+            ).set_properties(
+                subset=pd.IndexSlice[:, [similar_responses.columns[0]]],
+                **{'font-weight': 'extra-bold'}
+            )
+        )
+
+
+        st.subheader(f":boom: ...but couldn't disagree more on these:")
+        st.dataframe(diff_responses)
+
+
+
+
